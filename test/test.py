@@ -4,7 +4,7 @@ import time
 from Crypto.Cipher import ChaCha20_Poly1305
 
 # The server's address and port
-server_address = ('localhost', 5170)
+server_address = ('localhost', 5171)
 
 # Create a UDP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

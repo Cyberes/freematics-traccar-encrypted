@@ -1,6 +1,6 @@
 chacha_key: example123
 
 destinations:
-  5170:
+  5171:
     address: 192.168.1.200
-    port: 8080
+    port: 5171
