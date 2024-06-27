@@ -21,8 +21,14 @@ ciphertext, tag = cipher.encrypt_and_digest(message)
 
 # Send the encrypted message to the server
 sock.sendto(cipher.nonce + ciphertext + tag, server_address)
-sock.close()
 
 cipher = ChaCha20_Poly1305.new(key=key, nonce=cipher.nonce)
 plaintext = cipher.decrypt_and_verify(ciphertext, tag)
 print(plaintext)
+
+time.sleep(1)
+
+# Send a bad message to the server
+sock.sendto(b"this should fail", server_address)
+
+sock.close()

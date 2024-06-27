@@ -82,7 +82,7 @@ func main() {
 
 			forwardConn, err := net.DialUDP("udp", nil, forwardAddr)
 			if err != nil {
-				logger.Errorln("Error dialing to forward address:", err)
+				logger.Fatalln("Error dialing to forward address:", err)
 				return
 			}
 			defer forwardConn.Close()
@@ -93,27 +93,31 @@ func main() {
 				buf := make([]byte, 1500) // 1500 is the standard internet MTU
 				n, addr, err := conn.ReadFromUDP(buf)
 				if err != nil {
-					logger.Errorln("Error reading from UDP:", err)
-					return
+					logger.Fatalf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error reading from UDP: %s", err)))
+					continue
 				}
 
 				// Forward the decrypted message
 				go func(addr *net.UDPAddr, buf []byte, n int) {
 					plaintext, err := encryption.Decrypt(key, buf[:n]) // Use only the part of the buffer that has data
 					if err != nil {
-						fmt.Println("Error decrypting message:", err)
+						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error decrypting message: %s", err)))
 						return
 					}
 
 					_, err = forwardConn.Write(plaintext)
 					if err != nil {
-						fmt.Println("Error forwarding message:", err)
+						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error forwarding message: %s", err)))
 						return
 					}
-					logger.Infof("%s -> %s:%d -- %s\n", addr.IP, dest.Address, dest.Port, string(plaintext))
+					logger.Infof(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, string(plaintext)))
 				}(addr, buf, n)
 			}
 		}(port, dest)
 	}
 	select {}
+}
+
+func formatLogMsg(srcIp string, destIp string, destPort int, msg string) string {
+	return fmt.Sprintf("%s -> %s:%d -- %s", srcIp, destIp, destPort, msg)
 }
