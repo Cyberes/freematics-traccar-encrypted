@@ -13,7 +13,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 message = ('Hello, Server! ' + str(time.time())).encode()
 
 # The key and nonce
-key = bytes.fromhex('example123')
+key = bytes.fromhex('d38a3b96a26d0b1139bd30c174884f5dbc8eaaf492493725633ecebfa4ab19e9')
 
 # Encrypt the message
 cipher = ChaCha20_Poly1305.new(key=key)

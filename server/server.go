@@ -73,43 +73,91 @@ func main() {
 			}
 			defer conn.Close()
 
-			// Address to forward the decrypted messages
-			forwardAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dest.Address, dest.Port))
-			if err != nil {
-				logger.Fatalln("Error resolving forward address:", err)
-				return
-			}
-
-			forwardConn, err := net.DialUDP("udp", nil, forwardAddr)
-			if err != nil {
-				logger.Fatalln("Error dialing to forward address:", err)
-				return
-			}
-			defer forwardConn.Close()
-
 			logger.Infof("Listening on 0.0.0.0:%s\n", port)
 
 			for {
-				buf := make([]byte, 1500) // 1500 is the standard internet MTU
+				buf := make([]byte, 1500) // 1500 is the standard internet MTU.
 				n, addr, err := conn.ReadFromUDP(buf)
 				if err != nil {
 					logger.Fatalf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error reading from UDP: %s", err)))
-					continue
 				}
 
-				// Forward the decrypted message
+				// Handle the message.
 				go func(addr *net.UDPAddr, buf []byte, n int) {
-					plaintext, err := encryption.Decrypt(key, buf[:n]) // Use only the part of the buffer that has data
+					// Do the decryption.
+					var plaintext []byte
+					if len(buf[:n]) > 0 {
+						plaintext, err = encryption.Decrypt(key, buf[:n]) // Use only the part of the buffer that has data.
+						if err != nil {
+							rawHex := hex.EncodeToString(buf[:n])
+							logger.Warnf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf(`Error decrypting message: %s. Length: %d, Raw: "%s"`, err, len(rawHex), rawHex)))
+							// Forward the raw message to the backend without bothering with decryption.
+							plaintext = buf[:n]
+						}
+					} else {
+						plaintext = buf[:n]
+					}
+
+					forwardAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dest.Address, dest.Port))
 					if err != nil {
-						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error decrypting message: %s", err)))
+						logger.Fatalln("Error resolving forward address:", err)
 						return
 					}
 
+					// Create a new UDP address for listening to the backend server's response.
+					listenAddr, err := net.ResolveUDPAddr("udp", ":0") // Let the OS pick a free port.
+					if err != nil {
+						logger.Fatalln("Error resolving listen address:", err)
+						return
+					}
+
+					// Create a new UDP listener for the backend server's response.
+					listenConn, err := net.ListenUDP("udp", listenAddr)
+					if err != nil {
+						logger.Fatalln("Error listening for backend response:", err)
+						return
+					}
+					defer listenConn.Close()
+
+					// Dial the backend server without binding a local address.
+					forwardConn, err := net.DialUDP("udp", nil, forwardAddr)
+					if err != nil {
+						logger.Fatalln("Error dialing to forward address:", err)
+						return
+					}
+					defer forwardConn.Close()
+
+					// Forward the plaintext to the backend.
 					_, err = forwardConn.Write(plaintext)
 					if err != nil {
 						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error forwarding message: %s", err)))
 						return
 					}
+
+					// Read the response from the backend.
+					backendResponse := make([]byte, 1500)
+					n, err = forwardConn.Read(backendResponse)
+					if err != nil {
+						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error reading response from backend server: %s", err)))
+						return
+					}
+
+					fmt.Println(string(backendResponse[:]))
+
+					// Encrypt the backend's response.
+					encryptedBackendResponse, err := encryption.Encrypt(key, backendResponse[:n])
+					if err != nil {
+						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error encrypting response: %s", err)))
+						return
+					}
+
+					// Forward the encrypted backend response to the client.
+					_, err = conn.WriteToUDP(encryptedBackendResponse, addr)
+					if err != nil {
+						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error forwarding response to client: %s", err)))
+						return
+					}
+
 					logger.Infof(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, string(plaintext)))
 				}(addr, buf, n)
 			}

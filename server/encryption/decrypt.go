@@ -17,8 +17,9 @@ func Decrypt(key, ciphertextMsg []byte) ([]byte, error) {
 		return nil, errors.New("ciphertext too short")
 	}
 
-	// Split nonce and ciphertext.
-	nonce, ciphertext, tag := ciphertextMsg[:nonceSize], ciphertextMsg[nonceSize:len(ciphertextMsg)-tagSize], ciphertextMsg[len(ciphertextMsg)-tagSize:]
+	// Split the message apart.
+	// The order is nonce, ciphertext, and tag. The last two aren't used.
+	nonce, _, _ := ciphertextMsg[:nonceSize], ciphertextMsg[nonceSize:len(ciphertextMsg)-tagSize], ciphertextMsg[len(ciphertextMsg)-tagSize:]
 
-	return aead.Open(nil, nonce, append(ciphertext, tag...), nil)
+	return aead.Open(nil, nonce, ciphertextMsg[nonceSize:], nil)
 }
