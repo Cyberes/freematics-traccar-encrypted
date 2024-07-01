@@ -13,6 +13,8 @@ It consists of 2 parts:
 The server is protocol-independant and only manages encryption, meaning it can serve other protocols besides Freematics.
 It can also listen on multiple ports for multiple destinations.
 
+[Inspired by soshial's great writeup on the Freematics device.](https://gist.github.com/soshial/d07919e0fac67f5501a38fe3c39be416)
+
 ### Install
 
 #### Client
