@@ -91,12 +91,14 @@ func main() {
 						if err != nil {
 							rawHex := hex.EncodeToString(buf[:n])
 							logger.Warnf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf(`Error decrypting message: %s. Length: %d, Raw: "%s"`, err, len(rawHex), rawHex)))
-							// Forward the raw message to the backend without bothering with decryption.
-							plaintext = buf[:n]
+							plaintext = buf[:n] // Forward the raw message to the backend without bothering with decryption.
+							if len(plaintext) > 0 {
+								logger.Warningf("Encryption failed, possibly recieved unencrypted message -- %s", plaintext)
+							}
 						}
 					} else {
+						// If empty message.
 						plaintext = buf[:n]
-						logger.Warningln("Got unencrypted message!")
 					}
 
 					forwardAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dest.Address, dest.Port))

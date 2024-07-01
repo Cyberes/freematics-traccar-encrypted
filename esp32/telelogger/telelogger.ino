@@ -175,11 +175,13 @@ void printTimeoutStats()
 
 void beep(int duration)
 {
+#if ENABLE_BEEPING
     // turn on buzzer at 2000Hz frequency 
     sys.buzzer(2000);
     delay(duration);
     // turn off buzzer
     sys.buzzer(0);
+#endif
 }
 
 #if LOG_EXT_SENSORS

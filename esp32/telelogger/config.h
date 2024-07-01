@@ -95,8 +95,11 @@
 #define SERVER_PROTOCOL PROTOCOL_UDP
 #endif
 
+// Custom options from this fork
 #define SERVER_ENCRYPTION_ENABLE 1
 #define CHACHA20_KEY "your encryption key here"
+#define ENABLE_BEEPING 0
+// End custom options
 
 #ifndef CONFIG_MBEDTLS_CHACHAPOLY_C
 #define CONFIG_MBEDTLS_CHACHAPOLY_C y
