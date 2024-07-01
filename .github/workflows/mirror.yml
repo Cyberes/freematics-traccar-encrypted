@@ -1,0 +1,22 @@
+name: 'Mirror'
+on:
+  push:
+    branches:
+        - __mirror
+  schedule:
+    - cron: '* 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  Mirror:
+    runs-on: ubuntu-latest
+    name: mirror
+    steps:
+      - name: Fix git safe.directory in container
+        run: mkdir -p /home/runner/work/_temp/_github_home && printf "[safe]\n\tdirectory = /github/workspace" > /home/runner/work/_temp/_github_home/.gitconfig
+      - name: mirror
+        id: mirror
+        uses: bridgelightcloud/github-mirror-action@v1
+        with:
+          origin: 'https://git.evulid.cc/cyberes/freematics-traccar-encrypted.git'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
