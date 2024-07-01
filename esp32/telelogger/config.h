@@ -96,7 +96,7 @@
 #endif
 
 #define SERVER_ENCRYPTION_ENABLE 1
-#define CHACHA20_KEY "d38a3b96a26d0b1139bd30c174884f5dbc8eaaf492493725633ecebfa4ab19e9"
+#define CHACHA20_KEY "your encryption key here"
 
 #ifndef CONFIG_MBEDTLS_CHACHAPOLY_C
 #define CONFIG_MBEDTLS_CHACHAPOLY_C y

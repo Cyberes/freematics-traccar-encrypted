@@ -1,6 +1,9 @@
+# Your encryption key.
 chacha_key: example123
 
+# Destinations to forward messages to.
+# Multiple destinations are supported.
 destinations:
-  5171:
-    address: 192.168.1.200
-    port: 5171
+  5171: # What port to listen on
+    address: 192.168.1.200 # The destination address of your Traccar server where messages should be forwared to.
+    port: 5171 # The destination port Traccar is listening.

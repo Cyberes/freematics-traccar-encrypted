@@ -1,0 +1,12 @@
+[Unit]
+Description=Freematics Encryption Server
+After=network.target
+
+[Service]
+SyslogIdentifier=freematics-encrypt
+User=freematics
+ExecStart=/srv/freematics/freematics-encrypt -d --config /srv/freematics/config.yml
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

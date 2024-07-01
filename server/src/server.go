@@ -52,7 +52,7 @@ func main() {
 	// Validate destinations
 	for port, dest := range config.Destinations {
 		if dest.Address == "" || dest.Port == 0 {
-			logger.Fatalln("Invalid destination for port %s\n", port)
+			logger.Fatalln("Invalid destination for port %s", port)
 		}
 	}
 
@@ -73,7 +73,7 @@ func main() {
 			}
 			defer conn.Close()
 
-			logger.Infof("Listening on 0.0.0.0:%s\n", port)
+			logger.Infof("Listening on 0.0.0.0:%s", port)
 
 			for {
 				buf := make([]byte, 1500) // 1500 is the standard internet MTU.
