@@ -142,7 +142,7 @@ func main() {
 						return
 					}
 
-					fmt.Println(string(backendResponse[:]))
+					//fmt.Println(string(backendResponse[:]))
 
 					// Encrypt the backend's response.
 					encryptedBackendResponse, err := encryption.Encrypt(key, backendResponse[:n])

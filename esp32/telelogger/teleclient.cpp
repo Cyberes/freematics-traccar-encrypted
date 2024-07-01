@@ -305,25 +305,11 @@ bool TeleClientUDP::notify(byte event, const char* payload)
 
     // decrypt received data
 #if SERVER_ENCRYPTION_ENABLE == 1
-    Serial.println("decrypting data");
-
-    if (bytesRecv >= 12 + 16) {
-      char decrypted_data[bytesRecv - 12 - 16 + 1]; // +1 for null-terminator
-      decrypt_string((unsigned char *)data, bytesRecv, (unsigned char *)decrypted_data);
-      Serial.println("decrytion function exited");
-      if (decrypted_data[0] == '\0') {
-        continue;
-      }
-      data = decrypted_data;
-      bytesRecv = strlen(decrypted_data);
-    } else {
-      Serial.println("[CHACHA] Received data is too short to be decrypted");
-      continue;
-    }
-
-    Serial.println("decrypted data");
+    char decrypted_data[bytesRecv - 12 - 16 + 1]; // +1 for null-terminator
+    decrypt_string((unsigned char *)data, bytesRecv, (unsigned char *)decrypted_data);
+    data = decrypted_data;
+    bytesRecv = strlen(decrypted_data);
 #endif
-
     // verify checksum
     if (!verifyChecksum(data)) {
       Serial.print("[UDP] Checksum mismatch:");
@@ -520,6 +506,14 @@ void TeleClientUDP::inbound()
     }
     if (!data || len == 0) break;
     data[len] = 0;
+
+#if SERVER_ENCRYPTION_ENABLE == 1
+    char decrypted_data[len - 12 - 16 + 1];
+    decrypt_string((unsigned char *)data, len, (unsigned char *)decrypted_data);
+    data = decrypted_data;
+    len = strlen(decrypted_data);
+#endif
+
     Serial.print("[UDP] ");
     Serial.println(data);
     rxBytes += len;

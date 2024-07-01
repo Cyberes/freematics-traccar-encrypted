@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <ChaChaPoly.h>
 #include <HardwareSerial.h>
+#include "Crypto.h"
 
 void print_hex(const unsigned char *data, size_t length) {
     for (size_t i = 0; i < length; ++i) {
@@ -12,7 +13,6 @@ void print_hex(const unsigned char *data, size_t length) {
 }
 
 void encrypt_string(const unsigned char *input, size_t length, unsigned char *output) {
-    // Create an instance of the ChaChaPoly class
     ChaChaPoly chachaPoly;
 
     // Initialize the encryption key
@@ -20,8 +20,6 @@ void encrypt_string(const unsigned char *input, size_t length, unsigned char *ou
     for (int i = 0; i < 32; ++i) {
         sscanf(CHACHA20_KEY + 2*i, "%02x", &key[i]);
     }
-
-    // Set the encryption key
     chachaPoly.setKey(key, sizeof(key));
 
     // Generate a random nonce (IV)
@@ -38,12 +36,10 @@ void encrypt_string(const unsigned char *input, size_t length, unsigned char *ou
     // Prepend the nonce to the output
     memcpy(output, nonce, sizeof(nonce));
 
-    // Clear the encryption context
     chachaPoly.clear();
 }
 
 void decrypt_string(const unsigned char *input, size_t length, unsigned char *output) {
-    // Create an instance of the ChaChaPoly class
     ChaChaPoly chachaPoly;
 
     // Initialize the decryption key
@@ -51,13 +47,7 @@ void decrypt_string(const unsigned char *input, size_t length, unsigned char *ou
     for (int i = 0; i < 32; ++i) {
         sscanf(CHACHA20_KEY + 2*i, "%02x", &key[i]);
     }
-
-    Serial.println("loaded key");
-
-    // Set the decryption key
     chachaPoly.setKey(key, sizeof(key));
-
-    Serial.println("set key");
 
     // Extract the nonce (IV) from the input
     unsigned char nonce[12];
@@ -72,49 +62,55 @@ void decrypt_string(const unsigned char *input, size_t length, unsigned char *ou
         return;
     }
 
-    Serial.println("did nonce");
-
     // Decrypt the input data
     size_t decryptedLength = length - sizeof(nonce) - chachaPoly.tagSize();
     chachaPoly.decrypt(output, input + sizeof(nonce), decryptedLength);
 
-    Serial.println("did decryption");
-
-    // Print the decrypted data as hex values
-    String decryptedString = "";
-    for (size_t i = 0; i < decryptedLength; i++) {
-        decryptedString += (char)output[i];
-    }
-    Serial.println(decryptedString);
+    // String decryptedString = "";
+    // for (size_t i = 0; i < decryptedLength; i++) {
+    //     decryptedString += (char)output[i];
+    // }
+    // Serial.println(decryptedString);
     
-    // Verify the authentication tag
-
-
-    const unsigned char *tagPtr = input + sizeof(nonce) + decryptedLength;
-    Serial.print("Tag: ");
-    for (size_t i = 0; i < chachaPoly.tagSize(); i++) {
-        Serial.print(tagPtr[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
-
-    Serial.print("Computed Tag: ");
-    uint8_t computedTag[16];
+    const unsigned char *tagPtr = input + sizeof(nonce) + decryptedLength; // actual tag
+    uint8_t computedTag[16]; // computed tag
     chachaPoly.computeTag(computedTag, sizeof(computedTag));
-    for (size_t i = 0; i < sizeof(computedTag); i++) {
-        Serial.print(computedTag[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
 
-    if (!chachaPoly.checkTag(tagPtr, chachaPoly.tagSize())) {
-        Serial.println("Authentication failed!");
+    // Serial.print("Tag: ");
+    // for (size_t i = 0; i < chachaPoly.tagSize(); i++) {
+    //     Serial.print(tagPtr[i], HEX);
+    //     Serial.print(" ");
+    // }
+    // Serial.println();
+    // Serial.print("Computed Tag: ");
+    // for (size_t i = 0; i < sizeof(computedTag); i++) {
+    //     Serial.print(computedTag[i], HEX);
+    //     Serial.print(" ");
+    // }
+    // Serial.println();
+
+    ///// BEGIN TAG VERIFY
+    // The crypto library implementation of tag verification crashes.
+
+    // Can never match if the expected tag length is too long.
+    if (chachaPoly.tagSize() > 16) {
+        Serial.println("[CHACHA] Authentication failed: expected tag length is too long");
         output[0] = '\0'; // Set output to an empty string
         return;
     }
 
-    ///
+    // Compute the tag and check it.
+    bool equal = secure_compare(computedTag, tagPtr, chachaPoly.tagSize());
+    clean(computedTag);
 
-    // Clear the decryption context
+    if (!equal) {
+        Serial.println("[CHACHA] Authentication failed!");
+        output[0] = '\0';
+        return;
+    }
+
+    ///// END TAG VERIFY
+
+    output[decryptedLength] = '\0';
     chachaPoly.clear();
 }

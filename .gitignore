@@ -1,5 +1,6 @@
 .idea
 config.yml
+.vscode
 
 # ---> Python
 # Byte-compiled / optimized / DLL files
