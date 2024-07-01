@@ -30,7 +30,7 @@ func main() {
 	logger := logging.GetLogger()
 
 	if *configFile == "" {
-		logger.Fatalln("Please provide a configuration file")
+		logger.Fatalln("Provide a configuration file via --config")
 	}
 
 	data, err := os.ReadFile(*configFile)
@@ -96,6 +96,7 @@ func main() {
 						}
 					} else {
 						plaintext = buf[:n]
+						logger.Warningln("Got unencrypted message!")
 					}
 
 					forwardAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", dest.Address, dest.Port))
@@ -141,8 +142,6 @@ func main() {
 						logger.Errorf(formatLogMsg(addr.IP.String(), dest.Address, dest.Port, fmt.Sprintf("Error reading response from backend server: %s", err)))
 						return
 					}
-
-					//fmt.Println(string(backendResponse[:]))
 
 					// Encrypt the backend's response.
 					encryptedBackendResponse, err := encryption.Encrypt(key, backendResponse[:n])
